@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Headers Manager - Options</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+
+<body class="options">
+    <div class="container">
+        <div class="header">
+            <h1>Headers Manager</h1>
+            <p>Manage HTTP request headers with website-based rules. Special Support for User-Agent header to override navigator variables.</p>
+        </div>
+
+        <div class="content">
+            <div id="status" class="status" style="display: none;"></div>
+
+            <div class="tabs">
+                <button class="tab" data-tab="websites">Websites</button>
+                <button class="tab" data-tab="rules">Header Rules</button>
+                <button class="tab" data-tab="settings">Settings</button>
+            </div>
+
+            <!-- Websites Tab -->
+            <div id="websites-tab" class="tab-content">
+                <div class="section">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h2>Websites</h2>
+                        <button class="btn btn-primary" id="addWebsiteBtn">Add Website</button>
+                    </div>
+                    <div id="websitesList"></div>
+                </div>
+            </div>
+
+            <!-- Rules Tab -->
+            <div id="rules-tab" class="tab-content">
+                <div class="section">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h2>Header Rules</h2>
+                        <button class="btn btn-primary" id="addRuleBtn">Add Rule</button>
+                    </div>
+                    <div id="rulesList"></div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="tab-content">
+                <div class="section">
+                    <h2>Settings</h2>
+
+                    <div class="settings-group">
+                        <h3>Storage Management</h3>
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <strong>Storage Information</strong>
+                                <p>Monitor storage usage and manage storage type for optimal sync performance.</p>
+                                <div id="storageInfo" class="storage-info">
+                                    <div class="loading">Loading storage information...</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" id="refreshStorageBtn">Refresh</button>
+                        </div>
+                        
+                        <div class="setting-item" id="migrationSection" style="display: none;">
+                            <div class="setting-info">
+                                <strong>Migrate Storage</strong>
+                                <p id="migrationDescription">Migrate data between sync and local storage.</p>
+                            </div>
+                            <button class="btn btn-secondary" id="migrateStorageBtn">Migrate to Sync</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>Data Management</h3>
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <strong>Clear All Data</strong>
+                                <p>Remove all websites, header rules, and settings. This action cannot be undone.</p>
+                            </div>
+                            <button class="btn btn-danger" id="clearDataBtn">Clear All Data</button>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <strong>Export Configuration</strong>
+                                <p>Download your current configuration as a JSON file for backup.</p>
+                            </div>
+                            <button class="btn btn-secondary" id="exportDataBtn">Export Data</button>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <strong>Import Configuration</strong>
+                                <p>Upload a previously exported configuration file.</p>
+                            </div>
+                            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                            <button class="btn btn-secondary" id="importDataBtn">Import Data</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>Extension Info</h3>
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <strong>Version</strong>
+                                <p>Headers Manager v1.0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Website Modal -->
+    <div id="websiteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="websiteModalTitle" class="modal-title">Add Website</h3>
+                <button class="close-btn" id="closeWebsiteModal">&times;</button>
+            </div>
+
+            <form id="websiteForm">
+                <div class="form-group">
+                    <label class="form-label" for="websiteName">Website Name</label>
+                    <input type="text" id="websiteName" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">URLs</label>
+                    <div id="urlsContainer"></div>
+                    <button type="button" class="btn btn-secondary btn-small" id="addUrlBtn">Add URL</button>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Enabled Rules</label>
+                    <div id="ruleGroupsCheckboxes" class="checkbox-group">
+                        <!-- Rules checkboxes will be populated here -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="websiteEnabled" class="checkbox" checked>
+                        <span>Enable this website</span>
+                    </label>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelWebsiteBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Website</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rule Modal -->
+    <div id="ruleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="ruleModalTitle" class="modal-title">Add Rule</h3>
+                <button class="close-btn" id="closeRuleModal">&times;</button>
+            </div>
+
+            <form id="ruleForm">
+                <div class="form-group">
+                    <label class="form-label" for="ruleName">Rule Name</label>
+                    <input type="text" id="ruleName" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Headers</label>
+                    <div id="headersContainer"></div>
+                    <button type="button" class="btn btn-secondary btn-small" id="addHeaderBtn">Add Header</button>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="ruleEnabled" class="checkbox" checked>
+                        <span>Enable this rule</span>
+                    </label>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelRuleBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Rule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Clear Data Confirmation Modal -->
+    <div id="clearDataModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Clear All Data</h3>
+                <button class="close-btn" id="closeClearDataModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <p><strong>⚠️ Warning: This action cannot be undone!</strong></p>
+                <p>This will permanently delete:</p>
+                <ul>
+                    <li>All website configurations</li>
+                    <li>All header rules</li>
+                    <li>All settings and preferences</li>
+                </ul>
+                <p>Are you sure you want to continue?</p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelClearDataBtn">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmClearDataBtn">Yes, Clear All Data</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="storage-manager.js"></script>
+    <script src="options.js"></script>
+</body>
+
+</html>
