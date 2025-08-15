@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Headers Manager",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Manage HTTP request headers with URL-based rules.",
     "homepage_url": "https://github.com/arabcoders/headers-manager-extension",
     "permissions": [
@@ -22,8 +22,8 @@
     },
     "options_page": "options.html",
     "icons": {
-        "16": "icons/icon16.svg",
-        "48": "icons/icon48.svg",
-        "128": "icons/icon128.svg"
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
     }
 }
