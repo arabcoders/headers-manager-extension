@@ -9,10 +9,12 @@ if [ -f "$zip_file" ]; then
 fi
 
 IGNORE_FILES=(
+    $zip_file
     "*.git*"
     "*.vscode*"
     "*.idea*"
     "*.DS_Store"
+    ".env"
     "node_modules/*"
     "dist/*"
     "build/*"

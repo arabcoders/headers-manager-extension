@@ -23,7 +23,7 @@ class StorageManager {
         if (this.initialized) return;
 
         try {
-            // Check current storage type
+            // Check current storage type from local storage (metadata)
             const storageTypeResult = await chrome.storage.local.get([this.STORAGE_TYPE_KEY]);
             this.currentStorageType = storageTypeResult[this.STORAGE_TYPE_KEY] || this.STORAGE_TYPES.SYNC;
 
@@ -212,11 +212,29 @@ class StorageManager {
     // Listen for storage changes across both storage areas
     addChangeListener(callback) {
         const wrappedCallback = (changes, namespace) => {
-            // Only trigger for the storage area we're currently using
+            // Filter changes to only relevant keys
+            const relevantChanges = {};
+            const relevantKeys = ['headerRules', 'websites'];
+            
+            for (const key of relevantKeys) {
+                if (changes[key]) {
+                    relevantChanges[key] = changes[key];
+                }
+            }
+
+            // Only trigger if there are relevant changes
+            if (Object.keys(relevantChanges).length === 0) {
+                return;
+            }
+
+            // Trigger for the storage area we're currently using
             if (this.currentStorageType === this.STORAGE_TYPES.LOCAL && namespace === 'local') {
-                callback(changes, namespace);
+                callback(relevantChanges, namespace);
             } else if (this.currentStorageType === this.STORAGE_TYPES.SYNC && namespace === 'sync') {
-                callback(changes, namespace);
+                callback(relevantChanges, namespace);
+            } else if (!this.initialized) {
+                // During initialization, trigger for any storage area
+                callback(relevantChanges, namespace);
             }
         };
 

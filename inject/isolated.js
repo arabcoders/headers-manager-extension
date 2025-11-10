@@ -2,6 +2,36 @@
 // Runs in ISOLATED world (content script context)
 
 let port = document.getElementById('headers-manager-port');
+let retryCount = 0;
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 500; // ms
+
+// Wait for port to be available (in case script execution order varies)
+const waitForPort = () => {
+    return new Promise((resolve) => {
+        if (port) {
+            resolve(port);
+            return;
+        }
+
+        const checkInterval = setInterval(() => {
+            port = document.getElementById('headers-manager-port');
+            if (port) {
+                clearInterval(checkInterval);
+                resolve(port);
+            }
+        }, 100);
+
+        // Timeout after 2 seconds
+        setTimeout(() => {
+            clearInterval(checkInterval);
+            if (!port) {
+                console.warn('Headers Manager: Port element not found after timeout');
+            }
+            resolve(port);
+        }, 2000);
+    });
+};
 
 const override = (prefs) => {
     if (!port) {
@@ -101,10 +131,31 @@ const createUserAgentData = (userAgent) => {
 
 const checkAndApplyUserAgent = async () => {
     try {
-        // Get configuration from storage
-        const result = await chrome.storage.sync.get(['websites', 'headerRules']);
+        // Get configuration from storage - try both sync and local
+        // This ensures compatibility with the storage manager's hybrid approach
+        let result;
+        try {
+            // Try sync first
+            result = await chrome.storage.sync.get(['websites', 'headerRules']);
+            
+            // If no data in sync, try local storage
+            if ((!result.websites || result.websites.length === 0) && 
+                (!result.headerRules || result.headerRules.length === 0)) {
+                result = await chrome.storage.local.get(['websites', 'headerRules']);
+            }
+        } catch (error) {
+            // Fallback to local storage if sync fails
+            console.warn('Headers Manager: Sync storage failed, trying local', error);
+            result = await chrome.storage.local.get(['websites', 'headerRules']);
+        }
+
         const websites = result.websites || [];
         const headerRules = result.headerRules || [];
+
+        if (websites.length === 0 || headerRules.length === 0) {
+            console.log('Headers Manager: No configuration found yet, will retry on storage change');
+            return;
+        }
 
         const currentUrl = window.location.href;
         let customUserAgent = null;
@@ -191,22 +242,46 @@ const checkAndApplyUserAgent = async () => {
     }
 };
 
-if (port) {
-    // Apply overrides immediately
-    checkAndApplyUserAgent();
+// Initialize with retry mechanism
+(async () => {
+    // Wait for port element to be available
+    await waitForPort();
 
-    // Listen for storage changes
-    chrome.storage.onChanged.addListener((changes, namespace) => {
-        if (namespace === 'sync' && (changes.websites || changes.headerRules)) {
-            checkAndApplyUserAgent();
-        }
-    });
+    if (port) {
+        // Apply overrides immediately with retry
+        const tryApply = async (attempt = 0) => {
+            try {
+                await checkAndApplyUserAgent();
+            } catch (error) {
+                if (attempt < MAX_RETRIES) {
+                    console.log(`Headers Manager: Retry ${attempt + 1}/${MAX_RETRIES} after error:`, error);
+                    setTimeout(() => tryApply(attempt + 1), RETRY_DELAY * (attempt + 1));
+                } else {
+                    console.error('Headers Manager: Failed to apply user agent after retries:', error);
+                }
+            }
+        };
 
-    // Listen for refresh messages
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.action === 'refreshNavigatorProperties') {
-            checkAndApplyUserAgent();
-            sendResponse({ success: true });
-        }
-    });
-}
+        tryApply();
+
+        // Listen for storage changes in both sync and local storage
+        chrome.storage.onChanged.addListener((changes, namespace) => {
+            if ((namespace === 'sync' || namespace === 'local') && 
+                (changes.websites || changes.headerRules)) {
+                console.log('Headers Manager: Storage changed, reapplying navigator overrides');
+                checkAndApplyUserAgent();
+            }
+        });
+
+        // Listen for refresh messages
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            if (message.action === 'refreshNavigatorProperties') {
+                console.log('Headers Manager: Refresh requested, reapplying navigator overrides');
+                checkAndApplyUserAgent();
+                sendResponse({ success: true });
+            }
+        });
+    } else {
+        console.warn('Headers Manager: Port element not available, navigator overrides disabled');
+    }
+})();

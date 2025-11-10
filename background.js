@@ -9,27 +9,59 @@ class HeadersManager {
         this.ruleId = 1;
         this.isLoading = false; // Prevent concurrent loads
         this.pendingReload = false; // Track if reload is needed after current load
+        this.initialized = false;
         this.init();
     }
 
     async init() {
-        // Load saved configuration from storage
-        await this.loadConfiguration();
+        try {
+            // CRITICAL: Initialize storage manager first before any storage operations
+            await storageManager.init();
+            console.log('Headers Manager: Storage manager initialized');
 
-        // Register navigator override scripts
-        await this.registerNavigatorScripts();
+            // Register navigator override scripts BEFORE loading configuration
+            // This ensures scripts are ready when pages load
+            await this.registerNavigatorScripts();
+            console.log('Headers Manager: Content scripts registered');
 
-        // Listen for storage changes
-        storageManager.addChangeListener(async (changes, namespace) => {
-            if (changes.headerRules || changes.websites) {
+            // Load saved configuration from storage
+            await this.loadConfiguration();
+            console.log('Headers Manager: Configuration loaded');
+
+            // Listen for storage changes
+            storageManager.addChangeListener(async (changes, namespace) => {
+                if (changes.headerRules || changes.websites) {
+                    console.log('Headers Manager: Storage changed, reloading configuration');
+                    await this.loadConfiguration();
+                }
+            });
+
+            // Listen for extension installation
+            chrome.runtime.onInstalled.addListener(async (details) => {
+                console.log('Headers Manager: Extension installed/updated', details.reason);
+                if (details.reason === 'install') {
+                    await this.setupDefaultConfiguration();
+                }
+                // Always reload configuration after install/update
                 await this.loadConfiguration();
-            }
-        });
+            });
 
-        // Listen for extension installation
-        chrome.runtime.onInstalled.addListener(() => {
-            this.setupDefaultConfiguration();
-        });
+            // Listen for browser startup - CRITICAL for cold start
+            chrome.runtime.onStartup.addListener(async () => {
+                console.log('Headers Manager: Browser startup detected, initializing...');
+                await storageManager.init();
+                await this.registerNavigatorScripts();
+                await this.loadConfiguration();
+            });
+
+            this.initialized = true;
+            console.log('Headers Manager: Fully initialized and ready');
+
+        } catch (error) {
+            console.error('Headers Manager: Initialization error:', error);
+            // Retry initialization after a delay
+            setTimeout(() => this.init(), 2000);
+        }
     }
 
     async loadConfiguration() {
@@ -46,9 +78,17 @@ class HeadersManager {
             do {
                 this.pendingReload = false; // Reset the flag
 
+                // Ensure storage manager is initialized
+                if (!storageManager.initialized) {
+                    console.log('Storage manager not initialized, waiting...');
+                    await storageManager.init();
+                }
+
                 const result = await storageManager.get(['headerRules', 'websites']);
                 const headerRules = result.headerRules || [];
                 const websites = result.websites || [];
+
+                console.log(`Loading configuration: ${headerRules.length} rules, ${websites.length} websites`);
 
                 // Get all existing dynamic rules and remove them
                 const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
