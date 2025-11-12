@@ -9,7 +9,7 @@ if [ -f "$zip_file" ]; then
 fi
 
 IGNORE_FILES=(
-    $zip_file
+    "${zip_file}"
     "*.git*"
     "*.vscode*"
     "*.idea*"
@@ -19,6 +19,7 @@ IGNORE_FILES=(
     "dist/*"
     "build/*"
     "screenshots/*"
+    "builder.sh"
 )
 
 echo "Creating zip file: $zip_file"

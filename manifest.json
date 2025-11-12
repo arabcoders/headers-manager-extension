@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Headers Manager",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Manage HTTP request headers with URL-based rules.",
     "homepage_url": "https://github.com/arabcoders/headers-manager-extension",
     "permissions": [

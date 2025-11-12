@@ -26,33 +26,50 @@ class PopupManager {
     renderWebsites() {
         const websitesList = document.getElementById('groupsList');
 
+        // Clear existing content
+        websitesList.textContent = '';
+
         if (this.websites.length === 0) {
-            websitesList.innerHTML = `
-        <div class="no-groups">
-          No websites configured.<br>
-          Click Options to get started.
-        </div>
-      `;
+            const noGroupsDiv = document.createElement('div');
+            noGroupsDiv.className = 'no-groups';
+
+            noGroupsDiv.appendChild(document.createTextNode('No websites configured.'));
+            noGroupsDiv.appendChild(document.createElement('br'));
+            noGroupsDiv.appendChild(document.createTextNode('Click Options to get started.'));
+
+            websitesList.appendChild(noGroupsDiv);
             return;
         }
 
-        const websitesHtml = this.websites.map(website => {
+        this.websites.forEach(website => {
             const enabledRulesCount = website.enabledRules.length;
             const totalRules = this.countRulesForWebsite(website);
             const isEnabled = website.enabled;
 
-            return `
-        <div class="group-item">
-          <div>
-            <div class="group-name">${this.escapeHtml(website.name)}</div>
-            <div class="group-count">${enabledRulesCount} rules enabled, ${totalRules} headers total</div>
-          </div>
-          <div class="toggle-switch ${isEnabled ? 'active' : ''}" data-website="${this.escapeHtml(website.id)}"></div>
-        </div>
-      `;
-        }).join('');
+            const groupItem = document.createElement('div');
+            groupItem.className = 'group-item';
 
-        websitesList.innerHTML = websitesHtml;
+            const infoDiv = document.createElement('div');
+
+            const groupName = document.createElement('div');
+            groupName.className = 'group-name';
+            groupName.textContent = website.name;
+
+            const groupCount = document.createElement('div');
+            groupCount.className = 'group-count';
+            groupCount.textContent = `${enabledRulesCount} rules enabled, ${totalRules} headers total`;
+
+            infoDiv.appendChild(groupName);
+            infoDiv.appendChild(groupCount);
+
+            const toggleSwitch = document.createElement('div');
+            toggleSwitch.className = `toggle-switch ${isEnabled ? 'active' : ''}`;
+            toggleSwitch.setAttribute('data-website', website.id);
+
+            groupItem.appendChild(infoDiv);
+            groupItem.appendChild(toggleSwitch);
+            websitesList.appendChild(groupItem);
+        });
     }
 
     countRulesForWebsite(website) {

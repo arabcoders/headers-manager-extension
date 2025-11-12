@@ -111,107 +111,237 @@ class OptionsManager {
     renderWebsites() {
         const websitesList = document.getElementById('websitesList');
 
+        // Clear existing content
+        websitesList.textContent = '';
+
         if (this.websites.length === 0) {
-            websitesList.innerHTML = `
-        <div class="empty-state">
-          <h3>No websites configured</h3>
-          <p>Click "Add Website" to create your first website configuration.</p>
-        </div>
-      `;
+            const emptyStateDiv = document.createElement('div');
+            emptyStateDiv.className = 'empty-state';
+
+            const heading = document.createElement('h3');
+            heading.textContent = 'No websites configured';
+
+            const paragraph = document.createElement('p');
+            paragraph.textContent = 'Click "Add Website" to create your first website configuration.';
+
+            emptyStateDiv.appendChild(heading);
+            emptyStateDiv.appendChild(paragraph);
+            websitesList.appendChild(emptyStateDiv);
             return;
         }
 
-        const websitesHtml = this.websites.map((website, index) => {
-            const urlsHtml = website.urls.map(url => `
-        <div class="url-item">
-          <span>${this.escapeHtml(url)}</span>
-        </div>
-      `).join('');
+        this.websites.forEach((website, index) => {
+            const itemCard = document.createElement('div');
+            itemCard.className = 'item-card';
 
-            const groupsHtml = website.enabledRules.map(ruleId => {
-                const rule = this.headerRules.find(r => r.id === ruleId);
-                return rule ? `
-          <span style="background: #e1e5e9; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 4px;">
-            ${this.escapeHtml(rule.name)}
-          </span>
-        ` : '';
-            }).join('');
+            // Item header
+            const itemHeader = document.createElement('div');
+            itemHeader.className = 'item-header';
 
-            return `
-        <div class="item-card">
-          <div class="item-header">
-            <div class="item-name">${this.escapeHtml(website.name)}</div>
-            <div class="item-actions">
-              <div class="toggle-switch ${website.enabled ? 'active' : ''}" data-type="website" data-index="${index}"></div>
-              <button class="btn btn-secondary btn-small edit-website-btn" data-index="${index}">Edit</button>
-              <button class="btn btn-danger btn-small delete-website-btn" data-index="${index}">Delete</button>
-            </div>
-          </div>
-          <div class="item-details">
-            <div class="item-info">
-              <strong>URLs (${website.urls.length}):</strong>
-              <div class="url-list">${urlsHtml}</div>
-            </div>
-            <div class="item-info" style="margin-top: 8px;">
-              <strong>Enabled Rules:</strong> ${groupsHtml || '<em>None</em>'}
-            </div>
-          </div>
-        </div>
-      `;
-        }).join('');
+            const itemName = document.createElement('div');
+            itemName.className = 'item-name';
+            itemName.textContent = website.name;
 
-        websitesList.innerHTML = websitesHtml;
+            const itemActions = document.createElement('div');
+            itemActions.className = 'item-actions';
+
+            const toggleSwitch = document.createElement('div');
+            toggleSwitch.className = `toggle-switch ${website.enabled ? 'active' : ''}`;
+            toggleSwitch.setAttribute('data-type', 'website');
+            toggleSwitch.setAttribute('data-index', index.toString());
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-secondary btn-small edit-website-btn';
+            editBtn.setAttribute('data-index', index.toString());
+            editBtn.textContent = 'Edit';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger btn-small delete-website-btn';
+            deleteBtn.setAttribute('data-index', index.toString());
+            deleteBtn.textContent = 'Delete';
+
+            itemActions.appendChild(toggleSwitch);
+            itemActions.appendChild(editBtn);
+            itemActions.appendChild(deleteBtn);
+
+            itemHeader.appendChild(itemName);
+            itemHeader.appendChild(itemActions);
+
+            // Item details
+            const itemDetails = document.createElement('div');
+            itemDetails.className = 'item-details';
+
+            // URLs section
+            const urlsInfo = document.createElement('div');
+            urlsInfo.className = 'item-info';
+
+            const urlsLabel = document.createElement('strong');
+            urlsLabel.textContent = `URLs (${website.urls.length}):`;
+            urlsInfo.appendChild(urlsLabel);
+
+            const urlList = document.createElement('div');
+            urlList.className = 'url-list';
+
+            website.urls.forEach(url => {
+                const urlItem = document.createElement('div');
+                urlItem.className = 'url-item';
+                const urlSpan = document.createElement('span');
+                urlSpan.textContent = url;
+                urlItem.appendChild(urlSpan);
+                urlList.appendChild(urlItem);
+            });
+
+            urlsInfo.appendChild(urlList);
+
+            // Enabled rules section
+            const rulesInfo = document.createElement('div');
+            rulesInfo.className = 'item-info';
+            rulesInfo.style.marginTop = '8px';
+
+            const rulesLabel = document.createElement('strong');
+            rulesLabel.textContent = 'Enabled Rules: ';
+            rulesInfo.appendChild(rulesLabel);
+
+            if (website.enabledRules.length === 0) {
+                const noneElem = document.createElement('em');
+                noneElem.textContent = 'None';
+                rulesInfo.appendChild(noneElem);
+            } else {
+                website.enabledRules.forEach(ruleId => {
+                    const rule = this.headerRules.find(r => r.id === ruleId);
+                    if (rule) {
+                        const badge = document.createElement('span');
+                        badge.style.cssText = 'background: #e1e5e9; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 4px;';
+                        badge.textContent = rule.name;
+                        rulesInfo.appendChild(badge);
+                    }
+                });
+            }
+
+            itemDetails.appendChild(urlsInfo);
+            itemDetails.appendChild(rulesInfo);
+
+            itemCard.appendChild(itemHeader);
+            itemCard.appendChild(itemDetails);
+            websitesList.appendChild(itemCard);
+        });
     }
 
     renderRules() {
         const rulesList = document.getElementById('rulesList');
 
+        // Clear existing content
+        rulesList.textContent = '';
+
         if (this.headerRules.length === 0) {
-            rulesList.innerHTML = `
-        <div class="empty-state">
-          <h3>No header rules configured</h3>
-          <p>Click "Add Rule" to create your first header rule.</p>
-        </div>
-      `;
+            const emptyStateDiv = document.createElement('div');
+            emptyStateDiv.className = 'empty-state';
+
+            const heading = document.createElement('h3');
+            heading.textContent = 'No header rules configured';
+
+            const paragraph = document.createElement('p');
+            paragraph.textContent = 'Click "Add Rule" to create your first header rule.';
+
+            emptyStateDiv.appendChild(heading);
+            emptyStateDiv.appendChild(paragraph);
+            rulesList.appendChild(emptyStateDiv);
             return;
         }
 
-        const rulesHtml = this.headerRules.map((rule, index) => {
-            const headersHtml = rule.headers.map(header => {
+        this.headerRules.forEach((rule, index) => {
+            const itemCard = document.createElement('div');
+            itemCard.className = 'item-card';
+
+            // Item header
+            const itemHeader = document.createElement('div');
+            itemHeader.className = 'item-header';
+
+            const itemName = document.createElement('div');
+            itemName.className = 'item-name';
+            itemName.textContent = rule.name;
+
+            const itemActions = document.createElement('div');
+            itemActions.className = 'item-actions';
+
+            const toggleSwitch = document.createElement('div');
+            toggleSwitch.className = `toggle-switch ${rule.enabled ? 'active' : ''}`;
+            toggleSwitch.setAttribute('data-type', 'rule');
+            toggleSwitch.setAttribute('data-index', index.toString());
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn btn-secondary btn-small edit-rule-btn';
+            editBtn.setAttribute('data-index', index.toString());
+            editBtn.textContent = 'Edit';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-danger btn-small delete-rule-btn';
+            deleteBtn.setAttribute('data-index', index.toString());
+            deleteBtn.textContent = 'Delete';
+
+            itemActions.appendChild(toggleSwitch);
+            itemActions.appendChild(editBtn);
+            itemActions.appendChild(deleteBtn);
+
+            itemHeader.appendChild(itemName);
+            itemHeader.appendChild(itemActions);
+
+            // Item details
+            const itemDetails = document.createElement('div');
+            itemDetails.className = 'item-details';
+
+            const headersInfo = document.createElement('div');
+            headersInfo.className = 'item-info';
+
+            const headersLabel = document.createElement('strong');
+            headersLabel.textContent = `Headers (${rule.headers.length}):`;
+            headersInfo.appendChild(headersLabel);
+
+            const urlList = document.createElement('div');
+            urlList.className = 'url-list';
+
+            rule.headers.forEach(header => {
                 const operation = header.operation || 'set';
-                const displayValue = operation === 'remove' ? '<em>REMOVE</em>' : this.escapeHtml(header.value || '');
-                const operationBadge = operation === 'remove' ?
-                    '<span style="background: #da3633; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px;">REMOVE</span>' :
-                    '<span style="background: #0969da; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px;">SET</span>';
 
-                return `
-          <div class="url-item">
-            <span><strong>${this.escapeHtml(header.name)}:</strong> ${displayValue}${operationBadge}</span>
-          </div>
-        `;
-            }).join('');
+                const urlItem = document.createElement('div');
+                urlItem.className = 'url-item';
 
-            return `
-        <div class="item-card">
-          <div class="item-header">
-            <div class="item-name">${this.escapeHtml(rule.name)}</div>
-            <div class="item-actions">
-              <div class="toggle-switch ${rule.enabled ? 'active' : ''}" data-type="rule" data-index="${index}"></div>
-              <button class="btn btn-secondary btn-small edit-rule-btn" data-index="${index}">Edit</button>
-              <button class="btn btn-danger btn-small delete-rule-btn" data-index="${index}">Delete</button>
-            </div>
-          </div>
-          <div class="item-details">
-            <div class="item-info">
-              <strong>Headers (${rule.headers.length}):</strong>
-              <div class="url-list">${headersHtml}</div>
-            </div>
-          </div>
-        </div>
-      `;
-        }).join('');
+                const span = document.createElement('span');
 
-        rulesList.innerHTML = rulesHtml;
+                const headerNameStrong = document.createElement('strong');
+                headerNameStrong.textContent = `${header.name}: `;
+                span.appendChild(headerNameStrong);
+
+                if (operation === 'remove') {
+                    const removeEm = document.createElement('em');
+                    removeEm.textContent = 'REMOVE';
+                    span.appendChild(removeEm);
+                } else {
+                    const valueText = document.createTextNode(header.value || '');
+                    span.appendChild(valueText);
+                }
+
+                const operationBadge = document.createElement('span');
+                if (operation === 'remove') {
+                    operationBadge.style.cssText = 'background: #da3633; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px;';
+                    operationBadge.textContent = 'REMOVE';
+                } else {
+                    operationBadge.style.cssText = 'background: #0969da; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px;';
+                    operationBadge.textContent = 'SET';
+                }
+                span.appendChild(operationBadge);
+
+                urlItem.appendChild(span);
+                urlList.appendChild(urlItem);
+            });
+
+            headersInfo.appendChild(urlList);
+            itemDetails.appendChild(headersInfo);
+
+            itemCard.appendChild(itemHeader);
+            itemCard.appendChild(itemDetails);
+            rulesList.appendChild(itemCard);
+        });
     }
 
     renderGroups() {
@@ -404,28 +534,55 @@ class OptionsManager {
         const container = document.getElementById('ruleGroupsCheckboxes');
         const enabledRules = this.currentEditingWebsite ? this.currentEditingWebsite.enabledRules : [];
 
-        container.innerHTML = this.headerRules.map(rule => `
-      <div class="checkbox-item">
-        <input type="checkbox" id="rule-${rule.id}" value="${rule.id}" 
-               ${enabledRules.includes(rule.id) ? 'checked' : ''}>
-        <label for="rule-${rule.id}">${this.escapeHtml(rule.name)}</label>
-      </div>
-    `).join('');
+        // Clear existing content
+        container.textContent = '';
+
+        this.headerRules.forEach(rule => {
+            const checkboxItem = document.createElement('div');
+            checkboxItem.className = 'checkbox-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `rule-${rule.id}`;
+            checkbox.value = rule.id;
+            if (enabledRules.includes(rule.id)) {
+                checkbox.checked = true;
+            }
+
+            const label = document.createElement('label');
+            label.setAttribute('for', `rule-${rule.id}`);
+            label.textContent = rule.name;
+
+            checkboxItem.appendChild(checkbox);
+            checkboxItem.appendChild(label);
+            container.appendChild(checkboxItem);
+        });
     }
 
     addUrlRow(value = '') {
         const container = document.getElementById('urlsContainer');
         const row = document.createElement('div');
         row.className = 'url-input-row';
-        row.innerHTML = `
-      <input type="text" class="form-control" placeholder="https://example.com (matches all paths)" value="${this.escapeHtml(value)}" required>
-      <button type="button" class="btn btn-danger btn-small remove-url-btn">Remove</button>
-    `;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control';
+        input.placeholder = 'https://example.com (matches all paths)';
+        input.value = value;
+        input.required = true;
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-danger btn-small remove-url-btn';
+        button.textContent = 'Remove';
+
+        row.appendChild(input);
+        row.appendChild(button);
         container.appendChild(row);
     }
 
     clearUrls() {
-        document.getElementById('urlsContainer').innerHTML = '';
+        document.getElementById('urlsContainer').textContent = '';
     }
 
     async saveWebsite() {
@@ -538,20 +695,55 @@ class OptionsManager {
         const container = document.getElementById('headersContainer');
         const row = document.createElement('div');
         row.className = 'header-form-row';
-        row.innerHTML = `
-      <input type="text" class="form-control" placeholder="Header Name" value="${this.escapeHtml(name)}" required>
-      <input type="text" class="form-control" placeholder="Header Value (empty for remove)" value="${this.escapeHtml(value)}">
-      <select class="form-control" style="max-width: 120px;">
-        <option value="set" ${operation === 'set' ? 'selected' : ''}>Set</option>
-        <option value="remove" ${operation === 'remove' ? 'selected' : ''}>Remove</option>
-      </select>
-      <button type="button" class="btn btn-danger btn-small remove-header-btn">Remove</button>
-    `;
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'form-control';
+        nameInput.placeholder = 'Header Name';
+        nameInput.value = name;
+        nameInput.required = true;
+
+        const valueInput = document.createElement('input');
+        valueInput.type = 'text';
+        valueInput.className = 'form-control';
+        valueInput.placeholder = 'Header Value (empty for remove)';
+        valueInput.value = value;
+
+        const select = document.createElement('select');
+        select.className = 'form-control';
+        select.style.maxWidth = '120px';
+
+        const setOption = document.createElement('option');
+        setOption.value = 'set';
+        setOption.textContent = 'Set';
+        if (operation === 'set') {
+            setOption.selected = true;
+        }
+
+        const removeOption = document.createElement('option');
+        removeOption.value = 'remove';
+        removeOption.textContent = 'Remove';
+        if (operation === 'remove') {
+            removeOption.selected = true;
+        }
+
+        select.appendChild(setOption);
+        select.appendChild(removeOption);
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-danger btn-small remove-header-btn';
+        button.textContent = 'Remove';
+
+        row.appendChild(nameInput);
+        row.appendChild(valueInput);
+        row.appendChild(select);
+        row.appendChild(button);
         container.appendChild(row);
     }
 
     clearHeaders() {
-        document.getElementById('headersContainer').innerHTML = '';
+        document.getElementById('headersContainer').textContent = '';
     }
 
     async saveRule() {
@@ -643,12 +835,21 @@ class OptionsManager {
         const migrationDesc = document.getElementById('migrationDescription');
 
         try {
-            storageInfoDiv.innerHTML = '<div class="loading">Loading storage information...</div>';
+            // Show loading state
+            storageInfoDiv.textContent = '';
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading';
+            loadingDiv.textContent = 'Loading storage information...';
+            storageInfoDiv.appendChild(loadingDiv);
 
             const storageInfo = await storageManager.getStorageInfo();
 
             if (storageInfo.error) {
-                storageInfoDiv.innerHTML = `<div class="error">Error loading storage info: ${storageInfo.error}</div>`;
+                storageInfoDiv.textContent = '';
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.textContent = `Error loading storage info: ${storageInfo.error}`;
+                storageInfoDiv.appendChild(errorDiv);
                 return;
             }
 
@@ -661,39 +862,63 @@ class OptionsManager {
                 else if (usagePercentage > 75) usageClass = 'warning';
             }
 
-            let html = `
-                <div class="storage-type">
-                    Current Storage: ${storageInfo.currentStorageType === 'sync' ? 'Sync Storage (syncs across devices)' : 'Local Storage (device only)'}
-                </div>
-            `;
+            // Clear and rebuild storage info display
+            storageInfoDiv.textContent = '';
+
+            // Storage type
+            const storageTypeDiv = document.createElement('div');
+            storageTypeDiv.className = 'storage-type';
+            storageTypeDiv.textContent = storageInfo.currentStorageType === 'sync'
+                ? 'Current Storage: Sync Storage (syncs across devices)'
+                : 'Current Storage: Local Storage (device only)';
+            storageInfoDiv.appendChild(storageTypeDiv);
+
+            // Storage usage
+            const storageUsageDiv = document.createElement('div');
+            storageUsageDiv.className = 'storage-usage';
 
             if (storageInfo.currentStorageType === 'sync') {
-                html += `
-                    <div class="storage-usage">
-                        <span class="usage-text">Sync Usage:</span>
-                        <div class="usage-bar">
-                            <div class="usage-fill ${usageClass}" style="width: ${usagePercentage}%"></div>
-                        </div>
-                        <span class="usage-text">${Math.round(storageInfo.syncUsage.bytes / 1024)}KB / 100KB</span>
-                    </div>
-                `;
+                const usageText1 = document.createElement('span');
+                usageText1.className = 'usage-text';
+                usageText1.textContent = 'Sync Usage:';
+                storageUsageDiv.appendChild(usageText1);
+
+                const usageBar = document.createElement('div');
+                usageBar.className = 'usage-bar';
+
+                const usageFill = document.createElement('div');
+                usageFill.className = `usage-fill ${usageClass}`;
+                usageFill.style.width = `${usagePercentage}%`;
+                usageBar.appendChild(usageFill);
+                storageUsageDiv.appendChild(usageBar);
+
+                const usageText2 = document.createElement('span');
+                usageText2.className = 'usage-text';
+                usageText2.textContent = `${Math.round(storageInfo.syncUsage.bytes / 1024)}KB / 100KB`;
+                storageUsageDiv.appendChild(usageText2);
             } else {
-                html += `
-                    <div class="storage-usage">
-                        <span class="usage-text">Local Usage: ${Math.round(storageInfo.localUsage.bytes / 1024)}KB</span>
-                    </div>
-                `;
+                const usageText = document.createElement('span');
+                usageText.className = 'usage-text';
+                usageText.textContent = `Local Usage: ${Math.round(storageInfo.localUsage.bytes / 1024)}KB`;
+                storageUsageDiv.appendChild(usageText);
             }
 
+            storageInfoDiv.appendChild(storageUsageDiv);
+
+            // Recommendations
             if (storageInfo.recommendations.length > 0) {
-                html += '<div class="recommendations">';
-                storageInfo.recommendations.forEach(rec => {
-                    html += `<div class="recommendation">${rec}</div>`;
-                });
-                html += '</div>';
-            }
+                const recommendationsDiv = document.createElement('div');
+                recommendationsDiv.className = 'recommendations';
 
-            storageInfoDiv.innerHTML = html;
+                storageInfo.recommendations.forEach(rec => {
+                    const recDiv = document.createElement('div');
+                    recDiv.className = 'recommendation';
+                    recDiv.textContent = rec;
+                    recommendationsDiv.appendChild(recDiv);
+                });
+
+                storageInfoDiv.appendChild(recommendationsDiv);
+            }
 
             // Show/hide migration section
             if (storageInfo.currentStorageType === 'local') {
@@ -710,7 +935,11 @@ class OptionsManager {
 
         } catch (error) {
             console.error('Error refreshing storage info:', error);
-            storageInfoDiv.innerHTML = `<div class="error">Error loading storage information: ${error.message}</div>`;
+            storageInfoDiv.textContent = '';
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = `Error loading storage information: ${error.message}`;
+            storageInfoDiv.appendChild(errorDiv);
         }
     }
 
